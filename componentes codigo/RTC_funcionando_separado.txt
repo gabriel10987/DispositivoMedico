@@ -8,14 +8,12 @@
 
 #include <RtcDS1302.h>
 
-#define BUZZER_PIN 13 // Pin del buzzer
-#define BOTON_1 12
-#define BOTON_2 14
-#define LED 18
-#define MOTOR 34
-
 ThreeWire myWire(4,5,2); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
+
+// funcion milis para medir cada 5 seg
+unsigned long previousMillis = 0;
+const unsigned long interval = 5000;
 
 void setup () 
 {
@@ -36,6 +34,7 @@ void setup ()
         // Common Causes:
         //    1) first time you ran and the device wasn't running yet
         //    2) the battery on the device is low or even missing
+
         Serial.println("RTC lost confidence in the DateTime!");
         Rtc.SetDateTime(compiled);
     }
@@ -66,61 +65,34 @@ void setup ()
     {
         Serial.println("RTC is the same as compile time! (not expected but all is fine)");
     }
-
-    ledcSetup(0, 5000, 8); // Canal 0, frecuencia de 5000 Hz, resolución de 8 bits
-    ledcAttachPin(BUZZER_PIN, 0); // Asignar el pin del buzzer al canal 0
-    pinMode(BOTON_1, INPUT_PULLUP);
-    pinMode(BOTON_2, INPUT_PULLUP);
-    pinMode(LED, OUTPUT);
-    ledcWriteTone(0, 0);
 }
 
-void loop () {
-    int melody[] = {262, 262, 294, 262, 349, 330, 262, 262, 294, 262, 392, 349, 262, 262, 523, 440, 349, 330, 294, 466, 466, 440, 349, 392, 349, 262};
-    int noteDurations[] = {4, 4, 4, 4, 4, 2, 4, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4, 4, 2, 4, 4, 4, 4, 2, 4};
+void loop () 
+{
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      RtcDateTime now = Rtc.GetDateTime();
+      printDateTime(now);
+      Serial.println();
 
-    digitalWrite(LED, HIGH); // Enciende el LED
-  
-    if (digitalRead(BOTON_1) == LOW) {
-      digitalWrite(LED, LOW); // Apaga el LED
-      for (int i = 0; i < sizeof(melody) / sizeof(melody[0]); i++) {
-        int noteDuration = 1000 / noteDurations[i];
-        ledcWriteTone(0, melody[i]);
-        delay(noteDuration);
-        ledcWriteTone(0, 0);
-        delay(50); // Pausa entre notas
+      if (!now.IsValid())
+      {
+          // Common Causes:
+          //    1) the battery on the device is low or even missing and the power line was disconnected
+          Serial.println("RTC lost confidence in the DateTime!");
       }
-      digitalWrite(LED, HIGH); // Enciende el LED
+    
+      // Guardar el tiempo actual como el tiempo anterior
+      previousMillis = currentMillis;
     }
-
-    if (digitalRead(BOTON_2) == LOW) {
-      
-      Serial.println("Emergencia activada");
-
-    }
-
-
-    // medir el tiempo RTC
-    RtcDateTime now = Rtc.GetDateTime();
-
-    printDateTime(now);
-    Serial.println();
-
-    if (!now.IsValid())
-    {
-        // Common Causes:
-        //    1) the battery on the device is low or even missing and the power line was disconnected
-        Serial.println("RTC lost confidence in the DateTime!");
-    }
-
-    //delay(10000); // ten seconds
-    delay(5000); //5seg
 }
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 
-void printDateTime(const RtcDateTime& dt) {
+void printDateTime(const RtcDateTime& dt)
+{
     char datestring[26];
+
     snprintf_P(datestring, 
             countof(datestring),
             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),

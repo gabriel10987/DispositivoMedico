@@ -1,0 +1,53 @@
+#define LED_BLUE 13
+#define LED_GREEN 12
+#define LED_RED 14
+
+const int redChannel = 0;
+const int greenChannel = 1;
+const int blueChannel = 2;
+
+const int freq = 5000;
+const int resolution = 8;
+
+void setup() {
+  ledcSetup(redChannel, freq, resolution);
+  ledcSetup(greenChannel, freq, resolution);
+  ledcSetup(blueChannel, freq, resolution);
+
+  ledcAttachPin(LED_BLUE, blueChannel);
+  ledcAttachPin(LED_GREEN, greenChannel);
+  ledcAttachPin(LED_RED, redChannel);
+}
+
+void loop() {
+  encender_verde();
+  delay(5000);
+  encender_rojo();
+  delay(5000);
+  encender_amarillo();
+  delay(5000);
+  apagar_led();
+  delay(5000);
+}
+
+void encender_verde(){
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, 255);
+  ledcWrite(blueChannel, 0);
+}
+
+void encender_rojo(){
+  ledcWrite(redChannel, 255);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, 0);
+}
+void encender_amarillo(){
+  ledcWrite(redChannel, 255);
+  ledcWrite(greenChannel, 150);
+  ledcWrite(blueChannel, 0);
+}
+void apagar_led(){
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, 0);
+}
