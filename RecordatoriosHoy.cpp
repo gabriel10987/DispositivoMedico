@@ -2,13 +2,26 @@
 
 RecordatoriosHoy::RecordatoriosHoy() : contadorKey_(0), contadorRespondido_(0) {}
 
+int RecordatoriosHoy::getContadorKey() {
+    return contadorKey_;
+}
+
+int RecordatoriosHoy::getContadorRespondido() {
+    return contadorRespondido_;
+}
+
+std::map<int, Recordatorio> RecordatoriosHoy::getRecordatoriosMap() {
+    return recordatoriosMap_;
+}
+
+
 void RecordatoriosHoy::agregarRecordatorio(const Recordatorio& recordatorio) {
     recordatoriosMap_[contadorKey_] = recordatorio;
     contadorKey_++;
 }
 
 void RecordatoriosHoy::responderRecordatorio() {
-    if (contadorRespondido_ < contadorKey_) {
+    if (contadorRespondido_ <= contadorKey_) {
         // Buscar el recordatorio correspondiente al contadorRespondido_
         Recordatorio& recordatorio = recordatoriosMap_[contadorRespondido_];
         
@@ -29,6 +42,3 @@ Recordatorio RecordatoriosHoy::getRecordatorioPorKey(int key) {
     }
 }
 
-int RecordatoriosHoy::contadorRespondido() {
-    return contadorRespondido_;
-}

@@ -9,10 +9,14 @@ class RecordatoriosHoy {
 public:
     RecordatoriosHoy();
 
+    int getContadorKey();
+    int getContadorRespondido();
+    std::map<int, Recordatorio> getRecordatoriosMap();
+
     void agregarRecordatorio(const Recordatorio& recordatorio);
     void responderRecordatorio();
     Recordatorio getRecordatorioPorKey(int key); 
-        int contadorRespondido(); // Método para acceder a contadorRespondido_
+        
 
 
 private:
