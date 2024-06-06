@@ -59,9 +59,8 @@ const int resolution_mot = 8;
 // Botones definicion
 #define BOTON_PRINCIPAL 12
 #define BOTON_EMERGENCIA 13
-// Variables para almacenar el estado actual y el estado previo del botón
-int btnEmAct = HIGH; // Estado inicial: no presionado
-int btnEmPrev = HIGH; // Estado previo: no presionado
+// boton emergencia
+bool btnEmAnt = false;
 
 // Estados
 enum EstadoBrazalete{ESPERANDO, ALARMA, EMERGENCIA};
@@ -70,8 +69,10 @@ EstadoBrazalete est_brazalete = ESPERANDO;
 
 // Configuración del servidor MQTT
 const char* ID_PULSERA = "100100"; //sonar
-const char* mqtt_server = "161.132.49.157"; // Por ejemplo, puedes usar un servidor MQTT público para pruebas
+//const char* mqtt_server = "161.132.48.12";
+const char* mqtt_server = "161.132.49.157";
 const int mqtt_port = 1883; // Puerto predeterminado para MQTT
+//const char* mqtt_topic = "proyecto"; // El tema al que deseas publicar
 const char* mqtt_topic = ID_PULSERA; // El tema al que deseas publicar
 // Cliente WiFi y cliente MQTT
 WiFiClient espClient;
@@ -121,10 +122,12 @@ void setup(){
   ledcAttachPin(MOTORVIB, motor_channel);
 }
 
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX LOOP XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void loop(){
   // codigo tiempo y wifi
   unsigned long currentMillis = millis();
-
+  checkMQTT();
   switch(est_brazalete){
     case ESPERANDO:{
       RtcDateTime now = Rtc.GetDateTime();
@@ -134,18 +137,19 @@ void loop(){
         Serial.println(datetime);
         wifi_estado();
         apagar_led();
-        checkMQTT();
+        
         previousMillis = currentMillis;
       }
-      if (currentMillis - previousMillis_60s >= 60000) {
-        sonar = true;
-        previousMillis_60s = currentMillis;
-      }
-      //est_brazalete = btnEmergencia_pulsado();
-      //est_brazalete = comparar_tiempo("23/05/2024 11:07", comp_actual);
-      if (sonar){
-        est_brazalete = revisar_eventos(mensajeRecibido, comp_actual);
-      }
+      // funciones ya no utilies pero si para probar
+      //if (currentMillis - previousMillis_60s >= 60000) {
+      //  sonar = true;
+      //  previousMillis_60s = currentMillis;
+      //}
+      //if (sonar){
+      //  est_brazalete = revisar_eventos(ultimoMensaje, comp_actual);
+      //}
+      // funciones ya no utilies pero si para probar
+      est_brazalete = revisar_eventos(ultimoMensaje, comp_actual);
       
     }
     break;
@@ -163,13 +167,14 @@ void loop(){
       }
       // Publicar un mensaje en el tema MQTT
       client.publish(mqtt_topic, "Emergencia");
-      mensajeRecibido = "";
-      ultimoMensaje = "";
       est_brazalete = ESPERANDO;
     break;
   }
   
 }
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX LOOP XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 
 // ============================== LED RGB metodos ==============================
 void encender_verde(){
@@ -277,8 +282,7 @@ void setup_RTC(RtcDateTime compiled){
 }
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
-void printDateTime(const RtcDateTime& dt)
-{
+void printDateTime(const RtcDateTime& dt){
     char datestring[26];
 
     snprintf_P(datestring, 
@@ -293,8 +297,7 @@ void printDateTime(const RtcDateTime& dt)
     Serial.print(datestring);
 }
 
-String getDateTimeString(const RtcDateTime& dt)
-{
+String getDateTimeString(const RtcDateTime& dt){
     char datestring[26];
 
     snprintf_P(datestring, 
@@ -309,8 +312,7 @@ String getDateTimeString(const RtcDateTime& dt)
     
     return String(datestring);
 }
-String getDateTimeStringComparativo(const RtcDateTime& dt)
-{
+String getDateTimeStringComparativo(const RtcDateTime& dt){
     char datestring[26];
 
     snprintf_P(datestring, 
@@ -376,30 +378,33 @@ EstadoBrazalete btnPrincipal_pulsado(){
     encender_verde();
     sonar = false;
     // Limpiar el contenido anterior del mensaje recibido
-    mensajeRecibido = "";
+    client.publish(mqtt_topic, "Respondido");
+    ultimoMensaje = "";
     return ESPERANDO;
   } else{
     return ALARMA;
   }
 }
 
-EstadoBrazalete btnEmergencia_pulsado(){
-  // Leer el estado actual del botón
-  btnEmAct = digitalRead(BOTON_EMERGENCIA);
-  if (btnEmAct == LOW && btnEmPrev == HIGH) {
-    btnEmPrev = btnEmAct;
-    return EMERGENCIA;
-  }
-  btnEmPrev = btnEmAct;
-  return ESPERANDO;
-  
-}
+//EstadoBrazalete btnEmergencia_pulsado(){
+//  if (digitalRead(BOTON_EMERGENCIA) == LOW) {
+//    return EMERGENCIA;
+//  } else {
+//    return ESPERANDO;
+//  }
+//}
 
 EstadoBrazalete revisar_eventos(String hora_sonar, String hora_recibida){
-  if (digitalRead(BOTON_EMERGENCIA) == LOW) {
+  bool btnEmAct = (digitalRead(BOTON_EMERGENCIA) == LOW);
+  if (btnEmAct && !btnEmAnt) {
+    btnEmAnt = true;
     return EMERGENCIA;
   }
-  else if (hora_sonar == hora_recibida){
+  else if (!btnEmAct){
+    btnEmAnt = false;
+  }
+  
+  if (hora_sonar == hora_recibida){
     return ALARMA;
   } else {
     return ESPERANDO;
@@ -422,7 +427,6 @@ void reconnect() {
             Serial.print("Error al conectarse al servidor MQTT, rc=");
             Serial.print(client.state());
             Serial.println(" Intentando de nuevo");
-            
         }
     }
 }
@@ -438,7 +442,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
     for (unsigned int i = 0; i < length; i++) {
         mensajeRecibido += (char)payload[i];
     }
+    
     Serial.println(mensajeRecibido);
+    if (mensajeRecibido != "Emergencia" && mensajeRecibido != "Respondido"){
+      ultimoMensaje = mensajeRecibido;
+      Serial.print("Mensaje guardado: ");
+      Serial.println(ultimoMensaje);
+    }
+    mensajeRecibido = "";
 }
 // Función para revisar el tópico manualmente
 void checkMQTT() {
