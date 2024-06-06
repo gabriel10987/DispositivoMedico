@@ -69,11 +69,11 @@ EstadoBrazalete est_brazalete = ESPERANDO;
 
 // Configuración del servidor MQTT
 const char* ID_PULSERA = "100100"; //sonar
-//const char* mqtt_server = "161.132.48.12";
-const char* mqtt_server = "161.132.49.157";
+const char* mqtt_server = "161.132.48.12";
+//const char* mqtt_server = "161.132.49.157";
 const int mqtt_port = 1883; // Puerto predeterminado para MQTT
-//const char* mqtt_topic = "proyecto"; // El tema al que deseas publicar
-const char* mqtt_topic = ID_PULSERA; // El tema al que deseas publicar
+const char* mqtt_topic = "proyecto"; // El tema al que deseas publicar
+//const char* mqtt_topic = ID_PULSERA; // El tema al que deseas publicar
 // Cliente WiFi y cliente MQTT
 WiFiClient espClient;
 PubSubClient client(espClient);
