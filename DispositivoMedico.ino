@@ -18,6 +18,8 @@ const char* password = "kana1234xd";
 ThreeWire myWire(4,5,2); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
 
+
+
 // funcion milis para medir cada 5 seg
 unsigned long previousMillis = 0;
 const unsigned long interval = 5000;
@@ -57,6 +59,9 @@ const int resolution_mot = 8;
 // Botones definicion
 #define BOTON_PRINCIPAL 12
 #define BOTON_EMERGENCIA 13
+// Variables para almacenar el estado actual y el estado previo del botón
+int btnEmAct = HIGH; // Estado inicial: no presionado
+int btnEmPrev = HIGH; // Estado previo: no presionado
 
 // Estados
 enum EstadoBrazalete{ESPERANDO, ALARMA, EMERGENCIA};
@@ -64,14 +69,16 @@ enum EstadoBrazalete{ESPERANDO, ALARMA, EMERGENCIA};
 EstadoBrazalete est_brazalete = ESPERANDO;
 
 // Configuración del servidor MQTT
+const char* ID_PULSERA = "100100"; //sonar
 const char* mqtt_server = "161.132.49.157"; // Por ejemplo, puedes usar un servidor MQTT público para pruebas
 const int mqtt_port = 1883; // Puerto predeterminado para MQTT
-const char* mqtt_topic = "4to/proyecto"; // El tema al que deseas publicar
+const char* mqtt_topic = ID_PULSERA; // El tema al que deseas publicar
 // Cliente WiFi y cliente MQTT
 WiFiClient espClient;
 PubSubClient client(espClient);
 // Variable para almacenar el mensaje recibido del tópico MQTT
 String mensajeRecibido = "";
+String ultimoMensaje = "";
 
 //pruebas
 bool sonar = true;
@@ -156,6 +163,8 @@ void loop(){
       }
       // Publicar un mensaje en el tema MQTT
       client.publish(mqtt_topic, "Emergencia");
+      mensajeRecibido = "";
+      ultimoMensaje = "";
       est_brazalete = ESPERANDO;
     break;
   }
@@ -375,11 +384,15 @@ EstadoBrazalete btnPrincipal_pulsado(){
 }
 
 EstadoBrazalete btnEmergencia_pulsado(){
-  if (digitalRead(BOTON_EMERGENCIA) == LOW) {
+  // Leer el estado actual del botón
+  btnEmAct = digitalRead(BOTON_EMERGENCIA);
+  if (btnEmAct == LOW && btnEmPrev == HIGH) {
+    btnEmPrev = btnEmAct;
     return EMERGENCIA;
-  } else {
-    return ESPERANDO;
   }
+  btnEmPrev = btnEmAct;
+  return ESPERANDO;
+  
 }
 
 EstadoBrazalete revisar_eventos(String hora_sonar, String hora_recibida){
@@ -392,6 +405,8 @@ EstadoBrazalete revisar_eventos(String hora_sonar, String hora_recibida){
     return ESPERANDO;
   }
 }
+
+
 
 
 // mqtt metodos
@@ -418,10 +433,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     
     Serial.print("Mensaje recibido en tópico: ");
     Serial.print(topicStr);
-    Serial.print(". Mensaje: ");
-    
-    
-    
+    Serial.print(". Mensaje: ");   
     // Construir el mensaje recibido a partir del payload
     for (unsigned int i = 0; i < length; i++) {
         mensajeRecibido += (char)payload[i];
