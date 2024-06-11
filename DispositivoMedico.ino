@@ -205,17 +205,30 @@ void reproducirNota() {
     ledcWriteTone(BUZZER_CHANNEL, 0); // Detener la melodía si no se está reproduciendo
     return;
   }
-  
   ledcWriteTone(BUZZER_CHANNEL, melodia[indiceNota]);
-  
   int duracion = notaDuracion * 4 / duracionNota[indiceNota];
   indiceNota = (indiceNota + 1) % (sizeof(melodia) / sizeof(melodia[0])); // Avanzar al siguiente índice de la nota
-  
   // Si hemos reproducido todas las notas, volver al principio
   if (indiceNota == 0) {
     indiceNota = 0;
   }
+  ticker.once_ms(duracion, reproducirNota); // Reproducir la siguiente nota después de la duración
+}
 
+//XXXXXXX pruebas XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+void reproducirNotaMelodia(const int melodiaProg[], const int duracionNotaProg[]) {
+  if (!reproduciendo) {
+    ledcWriteTone(BUZZER_CHANNEL, 0); // Detener la melodía si no se está reproduciendo
+    return;
+  }
+  ledcWriteTone(BUZZER_CHANNEL, melodia[indiceNota]);
+  int duracion = notaDuracion * 4 / duracionNota[indiceNota];
+  indiceNota = (indiceNota + 1) % (sizeof(melodia) / sizeof(melodia[0])); // Avanzar al siguiente índice de la nota
+  // Si hemos reproducido todas las notas, volver al principio
+  if (indiceNota == 0) {
+    indiceNota = 0;
+  }
   ticker.once_ms(duracion, reproducirNota); // Reproducir la siguiente nota después de la duración
 }
 
