@@ -23,7 +23,6 @@ RtcDS1302<ThreeWire> Rtc(myWire);
 // funcion milis para medir cada 5 seg
 unsigned long previousMillis = 0;
 const unsigned long interval = 5000;
-unsigned long previousMillis_60s = 0; //sonar
 
 // LED RGB Definicion
 #define LED_BLUE 19
@@ -63,9 +62,16 @@ const int resolution_mot = 8;
 bool btnEmAnt = false;
 
 // Estados
+// Estados brazaletes
 enum EstadoBrazalete{ESPERANDO, ALARMA, EMERGENCIA};
 
 EstadoBrazalete est_brazalete = ESPERANDO;
+
+// Estados led en emergencia
+enum LedEmergencia{ESPERAR, ENCENDER};
+LedEmergencia estLed = ESPERAR; //juntar con milis
+unsigned long prevMill3min = 0;
+unsigned long prevLedMillis = 0;
 
 // Configuración del servidor MQTT
 const char* ID_PULSERA = "100100"; //sonar
@@ -140,16 +146,25 @@ void loop(){
         
         previousMillis = currentMillis;
       }
-      // funciones ya no utilies pero si para probar
-      //if (currentMillis - previousMillis_60s >= 60000) {
-      //  sonar = true;
-      //  previousMillis_60s = currentMillis;
-      //}
-      //if (sonar){
-      //  est_brazalete = revisar_eventos(ultimoMensaje, comp_actual);
-      //}
-      // funciones ya no utilies pero si para probar
       est_brazalete = revisar_eventos(ultimoMensaje, comp_actual);
+
+      switch(estLed){
+        case ESPERAR:
+        break;
+        case ENCENDER:
+          encender_rojo();
+          if (currentMillis - prevMill3min >= 180000) {
+            prevMill3min = currentMillis;
+            apagar_led();
+            estLed = ESPERAR;
+          }
+          if (est_brazalete == ALARMA){
+            prevMill3min = currentMillis;
+            apagar_led();
+            estLed = ESPERAR;
+          }
+        break;
+      }
       
     }
     break;
@@ -167,6 +182,7 @@ void loop(){
       }
       // Publicar un mensaje en el tema MQTT
       client.publish(mqtt_topic, "Emergencia");
+      estLed = ENCENDER;
       est_brazalete = ESPERANDO;
     break;
   }
@@ -369,7 +385,7 @@ void alarma_sonar(){
   reproduciendo = true;
   indiceNota = 0; // Reiniciar la melodía
   reproducirNota();
-  encender_rojo();
+  encender_amarillo();
   vibrar();
 }
 void alarma_apagar(){
@@ -391,21 +407,13 @@ EstadoBrazalete btnPrincipal_pulsado(){
     encender_verde();
     sonar = false;
     // Limpiar el contenido anterior del mensaje recibido
-    client.publish(mqtt_topic, "Respondido");
+    client.publish(mqtt_topic, "confirmed");
     ultimoMensaje = "";
     return ESPERANDO;
   } else{
     return ALARMA;
   }
 }
-
-//EstadoBrazalete btnEmergencia_pulsado(){
-//  if (digitalRead(BOTON_EMERGENCIA) == LOW) {
-//    return EMERGENCIA;
-//  } else {
-//    return ESPERANDO;
-//  }
-//}
 
 EstadoBrazalete revisar_eventos(String hora_sonar, String hora_recibida){
   bool btnEmAct = (digitalRead(BOTON_EMERGENCIA) == LOW);
@@ -423,8 +431,6 @@ EstadoBrazalete revisar_eventos(String hora_sonar, String hora_recibida){
     return ESPERANDO;
   }
 }
-
-
 
 
 // mqtt metodos
@@ -457,7 +463,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
     
     Serial.println(mensajeRecibido);
-    if (mensajeRecibido != "Emergencia" && mensajeRecibido != "Respondido"){
+    if (mensajeRecibido != "Emergencia" && mensajeRecibido != "confirmed"){
       ultimoMensaje = mensajeRecibido;
       Serial.print("Mensaje guardado: ");
       Serial.println(ultimoMensaje);
