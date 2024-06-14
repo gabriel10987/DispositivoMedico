@@ -21,6 +21,7 @@ RtcDS1302<ThreeWire> Rtc(myWire);
 
 
 // funcion milis para medir cada 5 seg
+unsigned long currentMillis;
 unsigned long previousMillis = 0;
 const unsigned long interval = 5000;
 
@@ -68,7 +69,7 @@ enum EstadoBrazalete{ESPERANDO, ALARMA, EMERGENCIA};
 EstadoBrazalete est_brazalete = ESPERANDO;
 
 // Estados led en emergencia
-enum LedEmergencia{ESPERAR, ENCENDER};
+enum LedEmergencia{ESPERAR, ENCENDER, ENCENDER_AZUL};
 LedEmergencia estLed = ESPERAR; //juntar con milis
 unsigned long prevMill3min = 0;
 unsigned long prevLedMillis = 0;
@@ -132,7 +133,8 @@ void setup(){
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX LOOP XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void loop(){
   // codigo tiempo y wifi
-  unsigned long currentMillis = millis();
+  //unsigned long currentMillis = millis();
+  currentMillis = millis();
   checkMQTT();
   switch(est_brazalete){
     case ESPERANDO:{
@@ -150,10 +152,24 @@ void loop(){
 
       switch(estLed){
         case ESPERAR:
+          prevMill3min = currentMillis;
         break;
         case ENCENDER:
           encender_rojo();
-          if (currentMillis - prevMill3min >= 180000) {
+          if (currentMillis - prevMill3min >= 5000) {
+            prevMill3min = currentMillis;
+            apagar_led();
+            estLed = ESPERAR;
+          }
+          if (est_brazalete == ALARMA){
+            prevMill3min = currentMillis;
+            apagar_led();
+            estLed = ESPERAR;
+          }
+        break;
+        case ENCENDER_AZUL:
+          encender_azul();
+          if (currentMillis - prevMill3min >= 5000) {
             prevMill3min = currentMillis;
             apagar_led();
             estLed = ESPERAR;
@@ -213,6 +229,11 @@ void apagar_led(){
   ledcWrite(redChannel, 0);
   ledcWrite(greenChannel, 0);
   ledcWrite(blueChannel, 0);
+}
+void encender_azul(){
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, 255);
 }
 
 // ============================== Buzzer metodos ==============================
@@ -403,12 +424,15 @@ EstadoBrazalete comparar_tiempo(String hora_sonar, String hora_recibida){
 }
 EstadoBrazalete btnPrincipal_pulsado(){
   if (digitalRead(BOTON_PRINCIPAL) == LOW) {
+    currentMillis = millis();
     alarma_apagar();
     encender_verde();
     sonar = false;
     // Limpiar el contenido anterior del mensaje recibido
     client.publish(mqtt_topic, "confirmed");
     ultimoMensaje = "";
+    prevMill3min = currentMillis;
+    estLed = ENCENDER_AZUL;
     return ESPERANDO;
   } else{
     return ALARMA;
