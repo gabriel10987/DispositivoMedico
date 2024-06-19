@@ -61,7 +61,8 @@ const int resolution_mot = 8;
 #define BOTON_EMERGENCIA 13
 // boton emergencia
 bool btnEmAnt = false;
-
+bool btnPrinAnt = false;
+bool btnPrinAct;
 // Estados
 // Estados brazaletes
 enum EstadoBrazalete{ESPERANDO, ALARMA, EMERGENCIA};
@@ -69,8 +70,8 @@ enum EstadoBrazalete{ESPERANDO, ALARMA, EMERGENCIA};
 EstadoBrazalete est_brazalete = ESPERANDO;
 
 // Estados led en emergencia
-enum LedEmergencia{ESPERAR, ENCENDER, ENCENDER_AZUL};
-LedEmergencia estLed = ESPERAR; //juntar con milis
+enum EstadoLed{ESPERAR, ENCENDER, ENCENDER_AZUL};
+EstadoLed estLed = ESPERAR; //juntar con milis
 unsigned long prevMill3min = 0;
 unsigned long prevLedMillis = 0;
 
@@ -169,7 +170,7 @@ void loop(){
         break;
         case ENCENDER_AZUL:
           encender_azul();
-          if (currentMillis - prevMill3min >= 5000) {
+          if (currentMillis - prevMill3min >= 600000) {
             prevMill3min = currentMillis;
             apagar_led();
             estLed = ESPERAR;
@@ -179,6 +180,7 @@ void loop(){
             apagar_led();
             estLed = ESPERAR;
           }
+          estLed = btnPrincipal_puls();
         break;
       }
       
@@ -197,7 +199,7 @@ void loop(){
           reconnect();
       }
       // Publicar un mensaje en el tema MQTT
-      client.publish(mqtt_topic, "Emergencia");
+      client.publish("proyecto/emergency", "true");
       estLed = ENCENDER;
       est_brazalete = ESPERANDO;
     break;
@@ -423,13 +425,34 @@ EstadoBrazalete comparar_tiempo(String hora_sonar, String hora_recibida){
   }
 }
 EstadoBrazalete btnPrincipal_pulsado(){
+  
+  btnPrinAct = (digitalRead(BOTON_PRINCIPAL) == LOW);
+  if (btnPrinAct && !btnPrinAnt) {
+    btnPrinAnt = true;
+    currentMillis = millis();
+    alarma_apagar();
+    encender_verde();
+    sonar = false;
+    // Limpiar el contenido anterior del mensaje recibido
+    //client.publish(mqtt_topic, "confirmed");
+    ultimoMensaje = "";
+    prevMill3min = currentMillis;
+    estLed = ENCENDER_AZUL;
+    return ESPERANDO;
+  }
+  else if (!btnPrinAct){
+    btnPrinAnt = false;
+  }
+  return ALARMA;
+
+  /*
   if (digitalRead(BOTON_PRINCIPAL) == LOW) {
     currentMillis = millis();
     alarma_apagar();
     encender_verde();
     sonar = false;
     // Limpiar el contenido anterior del mensaje recibido
-    client.publish(mqtt_topic, "confirmed");
+    //client.publish(mqtt_topic, "confirmed");
     ultimoMensaje = "";
     prevMill3min = currentMillis;
     estLed = ENCENDER_AZUL;
@@ -437,6 +460,7 @@ EstadoBrazalete btnPrincipal_pulsado(){
   } else{
     return ALARMA;
   }
+  */
 }
 
 EstadoBrazalete revisar_eventos(String hora_sonar, String hora_recibida){
@@ -454,6 +478,38 @@ EstadoBrazalete revisar_eventos(String hora_sonar, String hora_recibida){
   } else {
     return ESPERANDO;
   }
+}
+
+EstadoLed btnPrincipal_puls(){
+
+  btnPrinAct = (digitalRead(BOTON_PRINCIPAL) == LOW);
+  if (btnPrinAct && !btnPrinAnt) {
+    btnPrinAnt = true;
+    currentMillis = millis();
+    apagar_led();
+    // Limpiar el contenido anterior del mensaje recibido
+    client.publish("proyecto/confirmed", "confirmed");
+    prevMill3min = currentMillis;
+    return ESPERAR;
+  }
+  else if (!btnPrinAct){
+    btnPrinAnt = false;
+  }
+  return ENCENDER_AZUL;
+
+  //******************
+  //if (digitalRead(BOTON_PRINCIPAL) == LOW) {
+  //  currentMillis = millis();
+  //  apagar_led();
+  //  // Limpiar el contenido anterior del mensaje recibido
+  //  client.publish(mqtt_topic, "confirmed");
+  //  ultimoMensaje = "";
+  //  prevMill3min = currentMillis;
+  //  return ESPERAR;
+  //} else{
+  //  return ENCENDER_AZUL;
+  //}
+  //******************
 }
 
 
