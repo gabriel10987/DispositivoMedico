@@ -24,7 +24,9 @@ void loop() {
   delay(5000);
   encender_rojo();
   delay(5000);
-  encender_amarillo();
+  encender_azul();
+  delay(5000);
+  encender_blanco();
   delay(5000);
   apagar_led();
   delay(5000);
@@ -45,6 +47,16 @@ void encender_amarillo(){
   ledcWrite(redChannel, 255);
   ledcWrite(greenChannel, 150);
   ledcWrite(blueChannel, 0);
+}
+void encender_azul(){
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, 255);
+}
+void encender_blanco(){
+  ledcWrite(redChannel, 255);
+  ledcWrite(greenChannel, 255);
+  ledcWrite(blueChannel, 255);
 }
 void apagar_led(){
   ledcWrite(redChannel, 0);

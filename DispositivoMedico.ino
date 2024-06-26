@@ -228,31 +228,30 @@ void loop(){
 
 
 // ============================== LED RGB metodos ==============================
-void encender_verde(){
+void encender_verde(){ // funcion para encender el LED RGB en verde
   ledcWrite(redChannel, 0);
-  ledcWrite(greenChannel, 255);
+  ledcWrite(greenChannel, 255); // se da solo energia al verde
   ledcWrite(blueChannel, 0);
 }
-
-void encender_rojo(){
-  ledcWrite(redChannel, 255);
+void encender_rojo(){ // funcion para encender el LED RGB en rojo
+  ledcWrite(redChannel, 255); // solo se da energia al led rojo
   ledcWrite(greenChannel, 0);
   ledcWrite(blueChannel, 0);
 }
-void encender_amarillo(){
-  ledcWrite(redChannel, 255);
+void encender_amarillo(){ // funcion para encender el LED RGB en amarillo
+  ledcWrite(redChannel, 255); // se combinan rojo y verde dandoles energia
   ledcWrite(greenChannel, 150);
   ledcWrite(blueChannel, 0);
 }
-void apagar_led(){
+void apagar_led(){ // funcion para apagar el LED RGB
   ledcWrite(redChannel, 0);
-  ledcWrite(greenChannel, 0);
+  ledcWrite(greenChannel, 0); // no se da energia a ningun led
   ledcWrite(blueChannel, 0);
 }
-void encender_azul(){
+void encender_azul(){ // funcion para encender el LED RGB en azul
   ledcWrite(redChannel, 0);
   ledcWrite(greenChannel, 0);
-  ledcWrite(blueChannel, 255);
+  ledcWrite(blueChannel, 255); // se da solo energia al led azul
 }
 
 // ============================== Buzzer metodos ==============================

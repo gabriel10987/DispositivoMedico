@@ -1,0 +1,27 @@
+//MOTOR VIBRACION definicion
+#define MOTORVIB 14
+const int motor_channel = 4; //canal del motor
+const int freq_mot = 5000; //frecuencia del motor
+const int resolution_mot = 8; //resolucion del motor
+
+void setup(){
+  // ======================== motor vibracion =========================
+  // Configura el canal PWM para el motor de vibración
+  ledcSetup(motor_channel, freq_mot, resolution_mot); // Configura el canal PWM con la frecuencia y resolución especificadas para el motor de vibración
+  ledcAttachPin(MOTORVIB, motor_channel); // Asocia el pin del motor de vibración al canal PWM configurado
+}
+
+void loop(){
+  vibrar();
+  delay(5000);
+  no_vibrar();
+  delay(5000);
+}
+
+void vibrar() {
+  ledcWrite(motor_channel, 255); // Configura el canal PWM del motor con el valor máximo (255) para activar la vibración
+}
+
+void no_vibrar() {
+  ledcWrite(motor_channel, 0); // Configura el canal PWM del motor con el valor mínimo (0) para desactivar la vibración
+}

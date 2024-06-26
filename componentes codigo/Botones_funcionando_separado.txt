@@ -1,0 +1,37 @@
+// definicion de los botones
+#define BOTON_PRINCIPAL 12
+#define BOTON_EMERGENCIA 13
+// variables para solo una pulsacion
+bool btnEmAnt = false;
+bool btnPrinAnt = false;
+
+void setup(){
+  // ========================== Botones setup =========================
+  // Configura los pines de los botones
+  pinMode(BOTON_PRINCIPAL, INPUT_PULLUP); // Configura el pin del botón principal como entrada con pull-up interno
+  pinMode(BOTON_EMERGENCIA, INPUT_PULLUP); // Configura el pin del botón de emergencia como entrada con pull-up interno
+}
+
+void loop(){
+  bool btnPrinAct = (digitalRead(BOTON_PRINCIPAL) == LOW); // Lee el estado del botón principal
+  bool btnEmAct = (digitalRead(BOTON_EMERGENCIA) == LOW); // Lee el estado del botón de emergencia
+  
+  // condicionales para el boton principal y solo una pulsacion
+  if (btnPrinAct && !btnPrinAnt) {
+    btnPrinAnt = true; // condicion para que el boton no se pulse varias veces
+    Serial.println("Boton PRINCIPAL presionado")
+  }
+  else if (!btnPrinAct){ // condicion para que el boton no se ejecute varias veces, solo una vez
+    btnPrinAnt = false;
+  }
+  
+  // condicionales para el boton emergencia y solo una pulsacion
+  if (btnEmAct && !btnEmAnt) {  
+    btnEmAnt = true;
+    Serial.println("Boton EMERGENCIA pulsado");
+  }
+  else if (!btnEmAct){ // condicional para que el boton de emergencia no se envie varios veces y solo una vez
+    btnEmAnt = false;
+  }
+
+}
